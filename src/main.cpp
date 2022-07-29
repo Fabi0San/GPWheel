@@ -28,10 +28,9 @@
 
 
 ESP32DigitalInputGroup* ucPins = nullptr;
-Encoder* enc = nullptr;
-DigitalIGPin* btn = nullptr;
 BleGamepad bleGamepad;
 RelativeButtonsFromLinear* updown = nullptr;
+SimpleButton* btn = nullptr;
 
 void setup() {
   Serial.begin(250000);
@@ -56,9 +55,8 @@ void setup() {
 
   
   ucPins = new ESP32DigitalInputGroup(bit(4)|bit(18)|bit(19), bit(4));
-  enc = new Encoder(new DigitalIGPin(ucPins, 18, 5), new DigitalIGPin(ucPins, 19, 5));
-  btn = new DigitalIGPin(ucPins, 4, 5);
-  updown = new RelativeButtonsFromLinear(enc, 2, 3, 4); 
+  btn = new SimpleButton(new DigitalIGPin(ucPins, 4, 5), 1);
+  updown = new RelativeButtonsFromLinear(new Encoder(new DigitalIGPin(ucPins, 18, 5), new DigitalIGPin(ucPins, 19, 5)), 2, 3, 4); 
 }
 
 int lastState = 0;
@@ -69,24 +67,7 @@ void loop() {
 
   ucPins->Update();
   updown->Update(&bleGamepad);
-  btn->Update();
-
-  if(enc->HasChanged())
-  {
-      Serial.println(enc->GetState());
-      bleGamepad.setAxes(enc->GetState());
-      //bleGamepad.sendReport();
-  }
-
-  if(btn->Falling())
-  {
-    bleGamepad.release(BUTTON_1);
-  }
-
-  if(btn->Raising())
-  {
-    bleGamepad.press(BUTTON_1);
-  }
+  btn->Update(&bleGamepad);
 
   if((millis() % 1000) == 0)
   {
