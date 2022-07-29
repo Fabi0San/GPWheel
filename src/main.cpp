@@ -1,5 +1,5 @@
 #include <Arduino.h>
-
+#include <BleGamepad.h>
 
 
 // AnalogInput
@@ -180,6 +180,7 @@ void Encoder::Update()
 ESP32DigitalInputGroup* ucPins = nullptr;
 Encoder* enc = nullptr;
 DigitalIGPin* btn = nullptr;
+BleGamepad bleGamepad;
 
 void setup() {
   Serial.begin(250000);
@@ -189,6 +190,20 @@ void setup() {
   pinMode(18, INPUT_PULLUP);
   pinMode(19, INPUT_PULLUP);
 
+    BleGamepadConfiguration bleGamepadConfig;
+    bleGamepadConfig.setAutoReport(true);
+    bleGamepadConfig.setControllerType(CONTROLLER_TYPE_GAMEPAD); // CONTROLLER_TYPE_JOYSTICK, CONTROLLER_TYPE_GAMEPAD (DEFAULT), CONTROLLER_TYPE_MULTI_AXIS
+    bleGamepadConfig.setButtonCount(32);
+    bleGamepadConfig.setIncludeHome(true);
+    bleGamepadConfig.setIncludeStart(true);
+    bleGamepadConfig.setIncludeSelect(true);
+    bleGamepadConfig.setWhichAxes(true, true, true, true, true, true, true, true);      // Can also be done per-axis individually. All are true by default
+    //bleGamepadConfig.setWhichSimulationControls(true, true, true, true, true); // Can also be done per-control individually. All are false by default
+    bleGamepadConfig.setHatSwitchCount(4);                                                                      // 1 by default
+
+    bleGamepad.begin(&bleGamepadConfig);
+
+  
   ucPins = new ESP32DigitalInputGroup(bit(4)|bit(18)|bit(19), bit(4));
   enc = new Encoder(new DigitalIGPin(ucPins, 18, 5), new DigitalIGPin(ucPins, 19, 5));
   btn = new DigitalIGPin(ucPins, 4, 5);
@@ -207,16 +222,19 @@ void loop() {
   if(enc->HasChanged())
   {
       Serial.println(enc->GetState());
+      bleGamepad.setAxes(enc->GetState());
+      //bleGamepad.sendReport();
   }
 
   if(btn->Falling())
   {
-      Serial.println("released");
+    bleGamepad.release(BUTTON_1);
+    Serial.println("Released");
   }
 
   if(btn->Raising())
   {
-      Serial.println("Pressed");
+    bleGamepad.press(BUTTON_1);
   }
 
   if((millis() % 1000) == 0)
