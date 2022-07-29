@@ -1,8 +1,15 @@
+#pragma once
 #include <Arduino.h>
 #include <BleGamepad.h>
 #include "GPInput.hpp"
 
-class RelativeButtonsFromLinear
+class GPOutput
+{
+    public:
+    virtual void Update(BleGamepad* bleGamepad) = 0;
+};
+
+class RelativeButtonsFromLinear : public GPOutput
 {
   private:
     int buttonUp;
@@ -11,23 +18,22 @@ class RelativeButtonsFromLinear
     int divisor;
     LinearInput* source;
     ulong releaseAt;
-    BleGamepad* bleGamepad;
   
   public:
-    RelativeButtonsFromLinear(BleGamepad* bleGamepad, LinearInput* source, int buttonUp, int buttonDown, int divisor);
-    void Update();
+    RelativeButtonsFromLinear(LinearInput* source, int buttonUp, int buttonDown, int divisor);
+    void Update(BleGamepad* bleGamepad) override;
 };
 
-RelativeButtonsFromLinear::RelativeButtonsFromLinear(BleGamepad* bleGamepad, LinearInput* source, int buttonUp, int buttonDown, int divisor)
-  : source(source), bleGamepad(bleGamepad), buttonUp(buttonUp), buttonDown(buttonDown), divisor(divisor), releaseAt(0), buttonHeld(0)
+RelativeButtonsFromLinear::RelativeButtonsFromLinear(LinearInput* source, int buttonUp, int buttonDown, int divisor)
+  : source(source), buttonUp(buttonUp), buttonDown(buttonDown), divisor(divisor), releaseAt(0), buttonHeld(0)
 {
 }
 
-void RelativeButtonsFromLinear::Update()
+void RelativeButtonsFromLinear::Update(BleGamepad* bleGamepad)
 {
   if(this->releaseAt !=0 && millis() >= this->releaseAt)
   {
-    this->bleGamepad->release(this->buttonHeld);
+    bleGamepad->release(this->buttonHeld);
     this->releaseAt = 0;
   }
 
@@ -40,7 +46,7 @@ void RelativeButtonsFromLinear::Update()
       int button = this->source->Raising()
         ? this->buttonUp
         : this->buttonDown;
-      this->bleGamepad->press(button);
+      bleGamepad->press(button);
       this->buttonHeld = button;
       this->releaseAt = millis() + 100;
     }
