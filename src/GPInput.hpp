@@ -2,7 +2,7 @@
 #include <Arduino.h>
 
 // simple interface for input
-class Input
+class GPInput
 {
   protected:
     int state = 0;
@@ -16,17 +16,17 @@ class Input
     virtual int Falling() = 0;  
 };
 
-int Input::GetState()
+int GPInput::GetState()
 {
   return this->state;
 }
 
-int Input::HasChanged()
+int GPInput::HasChanged()
 {
     return this->changed; 
 }
 
-class DigitalInput : public Input
+class DigitalInput : public GPInput
 {
   public: 
     int Raising() override;  
@@ -44,7 +44,7 @@ int DigitalInput::Falling()
     return this->changed & ~this->state; 
 }
 
-class LinearInput : public Input
+class LinearInput : public GPInput
 {
   public: 
     int Raising() override;  
@@ -90,14 +90,14 @@ class DigitalIGPin : public DigitalInput
     int pin;
     ulong readTime;
     ulong debounceLimit;
-    Input* source;
+    GPInput* source;
 
   public: 
-    DigitalIGPin(Input* source, int pin, ulong debounceLimit);
+    DigitalIGPin(GPInput* source, int pin, ulong debounceLimit);
     virtual void Update() override;
 };
 
-DigitalIGPin::DigitalIGPin(Input* source, int pin, ulong debounceLimit)
+DigitalIGPin::DigitalIGPin(GPInput* source, int pin, ulong debounceLimit)
   : source(source), pin(pin), debounceLimit(debounceLimit)
 {    
 }
@@ -123,15 +123,15 @@ void DigitalIGPin::Update()
 class Encoder : public LinearInput
 {
   private:
-    Input* inputA;
-    Input* inputB;
+    GPInput* inputA;
+    GPInput* inputB;
     
   public:
-    Encoder(Input* inputA, Input* inputB);
+    Encoder(GPInput* inputA, GPInput* inputB);
     virtual void Update() override;
 };
 
-Encoder::Encoder(Input* inputA, Input* inputB)
+Encoder::Encoder(GPInput* inputA, GPInput* inputB)
   : inputA(inputA), inputB(inputB)
   {    
   }
