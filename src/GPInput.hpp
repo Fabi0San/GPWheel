@@ -125,14 +125,17 @@ class Encoder : public LinearInput
   private:
     GPInput* inputA;
     GPInput* inputB;
+    int magnification;
+    int minValue;
+    int maxValue;
     
   public:
-    Encoder(GPInput* inputA, GPInput* inputB);
+    Encoder(GPInput* inputA, GPInput* inputB, int magnification, int minValue, int maxValue);
     virtual void Update() override;
 };
 
-Encoder::Encoder(GPInput* inputA, GPInput* inputB)
-  : inputA(inputA), inputB(inputB)
+Encoder::Encoder(GPInput* inputA, GPInput* inputB, int magnification, int minValue, int maxValue)
+  : inputA(inputA), inputB(inputB), magnification(magnification), minValue(minValue), maxValue(maxValue)
   {    
   }
 
@@ -147,8 +150,8 @@ void Encoder::Update()
   this->changed = (aUpdated == bUpdated)
     ? 0
     : (aUpdated ^ (this->inputA->GetState() == this->inputB->GetState()))
-      ? + 1
-      : -1;
-  
-  this->state += this->changed;
+      ? this->magnification
+      : -this->magnification;
+
+  this->state = max(min(this->state + this->changed , this->maxValue), this->minValue);
 }

@@ -43,12 +43,13 @@ void RelativeButtonsFromLinear::Update(BleGamepad* bleGamepad)
         && this->source->HasChanged() 
         && ((this->source->GetState() % this->divisor) == 0))
         {
-        int button = this->source->Raising()
-            ? this->buttonUp
-            : this->buttonDown;
-        bleGamepad->press(button);
-        this->buttonHeld = button;
-        this->releaseAt = millis() + 100;
+            int button = this->source->Raising()
+                ? this->buttonUp
+                : this->buttonDown;
+            bleGamepad->press(button);
+            this->buttonHeld = button;
+            this->releaseAt = millis() + 100;
+            Serial.println(this->source->GetState());
         }
 }
 
@@ -80,3 +81,57 @@ void SimpleButton::Update(BleGamepad* bleGamepad)
         bleGamepad->release(this->button);
     }
 }
+
+class Axis : public GPOutput
+{
+    private:
+        uint8_t axis;
+        LinearInput* source;
+    public:
+        Axis(LinearInput* source, uint8_t axis);
+        void Update(BleGamepad* bleGamepad) override;
+};
+
+Axis::Axis(LinearInput* source, uint8_t axis)
+    : source(source), axis(axis)
+{    
+}
+
+void Axis::Update(BleGamepad* bleGamepad)
+{
+    this->source->Update();
+
+    if(source->HasChanged())
+    {
+        int16_t value = this->source->GetState();
+
+        switch (this->axis)
+        {
+        case X_AXIS:
+            bleGamepad->setX(value);
+            break;
+        case Y_AXIS:
+            bleGamepad->setY(value);
+            break;
+        case Z_AXIS:
+            bleGamepad->setZ(value);
+            break;
+        case RX_AXIS:
+            bleGamepad->setRX(value);
+            break;
+        case RY_AXIS:
+            bleGamepad->setRY(value);
+            break;
+        case RZ_AXIS:
+            bleGamepad->setRZ(value);
+            break;
+        case SLIDER1:
+            bleGamepad->setSlider1(value);
+            break;
+        case SLIDER2:
+            bleGamepad->setSlider2(value);
+            break;       
+        }
+    }
+}
+

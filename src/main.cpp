@@ -3,42 +3,20 @@
 #include "GPInput.hpp"
 #include "GPOutput.hpp"
 
-
-// AnalogInput
-  // last state
-  // GetState
-  // currentState
-
-// AnalogPin(pin)
-  // GetState
-
-// AnalogEncoder(pin, pin)
-  // currentState
-
-//GPControl
-  // refresh state
-
-// GPButton (digitalInput, bttn#)
-
-// GPAxis(analogInput, gp#)
-
-// GPSlider(analogInput, gp#)
-
-// GPHat(digitalInput[4], gp#)
-
-
 ESP32DigitalInputGroup* ucPins = nullptr;
 BleGamepad bleGamepad;
 RelativeButtonsFromLinear* updown = nullptr;
 SimpleButton* btn = nullptr;
+Axis* axis = nullptr;
 
-void setup() {
-  Serial.begin(250000);
-  Serial.println("setup");
+void setup() 
+{
+    Serial.begin(250000);
+    Serial.println("setup");
 
-  pinMode(4, INPUT_PULLUP);
-  pinMode(18, INPUT_PULLUP);
-  pinMode(19, INPUT_PULLUP);
+    pinMode(4, INPUT_PULLUP);
+    pinMode(18, INPUT_PULLUP);
+    pinMode(19, INPUT_PULLUP);
 
     BleGamepadConfiguration bleGamepadConfig;
     bleGamepadConfig.setAutoReport(true);
@@ -53,10 +31,22 @@ void setup() {
 
     bleGamepad.begin(&bleGamepadConfig);
 
-  
-  ucPins = new ESP32DigitalInputGroup(bit(4)|bit(18)|bit(19), bit(4));
-  btn = new SimpleButton(new DigitalIGPin(ucPins, 4, 5), 1);
-  updown = new RelativeButtonsFromLinear(new Encoder(new DigitalIGPin(ucPins, 18, 5), new DigitalIGPin(ucPins, 19, 5)), 2, 3, 4); 
+    
+    ucPins = new ESP32DigitalInputGroup(bit(4)|bit(18)|bit(19), bit(4));
+    btn = new SimpleButton(new DigitalIGPin(ucPins, 4, 5), 1);
+    /*updown = new RelativeButtonsFromLinear(
+        new Encoder(
+            new DigitalIGPin(ucPins, 18, 5), 
+            new DigitalIGPin(ucPins, 19, 5),
+            1, -12, 12)
+        , 2, 3, 4); */
+
+    axis = new Axis(
+        new Encoder(
+            new DigitalIGPin(ucPins, 18, 5), 
+            new DigitalIGPin(ucPins, 19, 5),
+            1000, -32000, 32000)
+        , X_AXIS);    
 }
 
 int lastState = 0;
@@ -64,19 +54,19 @@ int count = 0;
 bool shouldLog = true;
 
 void loop() {
+    ucPins->Update();
+    //updown->Update(&bleGamepad);
+    axis->Update(&bleGamepad);
+    btn->Update(&bleGamepad);
 
-  ucPins->Update();
-  updown->Update(&bleGamepad);
-  btn->Update(&bleGamepad);
-
-  if((millis() % 1000) == 0)
-  {
-    if(shouldLog)
+    if((millis() % 1000) == 0)
     {
-      Serial.print(".");
-      shouldLog = false;
+        if(shouldLog)
+        {
+            Serial.print(".");
+            shouldLog = false;
+        }
     }
-  }
-  else
-    shouldLog = true;
+    else
+      shouldLog = true;
 }
