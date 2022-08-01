@@ -120,6 +120,46 @@ void DigitalIGPin::Update()
     this->changed = 0;
 }
 
+class ADCPin : public LinearInput
+{
+    private:
+        uint8_t pin;
+        bool invert;
+        bool autoExpand;
+        uint16_t inputMin;
+        uint16_t inputMax;
+        int outputMin;
+        int outputMax;
+        uint16_t lastReading;
+    
+    public:
+        ADCPin(uint8_t pin, bool invert, int inputMin, int inputMax, bool autoExpand, int outputMin, int outputMax);
+        virtual void Update() override;
+};
+
+ADCPin::ADCPin(uint8_t pin, bool invert = false, int inputMin = 0, int inputMax = 4095, bool autoExpand = false, int outputMin = INT16_MIN, int outputMax = INT16_MAX)
+    : pin(pin), invert(invert), autoExpand(autoExpand), inputMin(inputMin), inputMax(inputMax), outputMin(outputMin), outputMax(outputMax) {}
+
+void ADCPin::Update()
+{
+    uint16_t reading = analogRead(pin);
+    if(reading == this->lastReading)
+        return;
+
+    this->lastReading = reading;
+
+    if(this->autoExpand)
+    {
+        this->inputMin = min(this->inputMin, reading);
+        this->inputMax = min(this->inputMax, reading);
+    }
+   
+    int newState = map(constrain(reading, this->inputMin, this->inputMax), this->inputMin, this->inputMax, this->outputMin, this->outputMax);
+
+    this->changed = newState - this->state;
+    this->state = newState;
+}
+
 class Encoder : public LinearInput
 {
   private:
@@ -153,5 +193,5 @@ void Encoder::Update()
       ? this->magnification
       : -this->magnification;
 
-  this->state = max(min(this->state + this->changed , this->maxValue), this->minValue);
+  this->state = constrain(this->state + this->changed, this->minValue, this->maxValue);
 }
