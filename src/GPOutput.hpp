@@ -135,3 +135,76 @@ void Axis::Update(BleGamepad* bleGamepad)
     }
 }
 
+class Hat: public GPOutput
+{
+    private:
+        uint8_t hat;
+        DigitalInput* upSrc; 
+        DigitalInput* downSrc;
+        DigitalInput* leftSrc; 
+        DigitalInput* rightSrc;
+
+        static signed char HatFromUDLR(byte udlr);
+
+    public:
+        Hat(DigitalInput* upSrc, DigitalInput* downSrc, DigitalInput* leftSrc, DigitalInput* rightSrc, uint8_t hat);
+        void Update(BleGamepad* bleGamepad) override;
+};
+
+Hat::Hat(DigitalInput* upSrc, DigitalInput* downSrc, DigitalInput* leftSrc, DigitalInput* rightSrc, uint8_t hat)
+    : upSrc(upSrc), downSrc(downSrc), leftSrc(leftSrc), rightSrc(rightSrc), hat(hat) {}
+
+signed char Hat::HatFromUDLR(byte urdl)
+{
+    switch (urdl)
+    {
+        case bit(0): return HAT_UP;
+        case bit(1): return HAT_RIGHT;
+        case bit(2): return HAT_DOWN;
+        case bit(3): return HAT_LEFT;
+        case bit(0)|bit(1): return HAT_UP_RIGHT;
+        case bit(0)|bit(3): return HAT_UP_LEFT;
+        case bit(2)|bit(1): return HAT_DOWN_RIGHT;
+        case bit(2)|bit(3): return HAT_DOWN_LEFT;
+        default: return HAT_CENTERED;
+    }
+}
+
+void Hat::Update(BleGamepad* bleGamepad)
+{
+    this->upSrc->Update();
+    this->rightSrc->Update();
+    this->downSrc->Update();
+    this->leftSrc->Update();
+
+    if(this->upSrc->HasChanged() ||
+        this->rightSrc->HasChanged() ||
+        this->downSrc->HasChanged() ||
+        this->leftSrc->HasChanged())
+    {
+        byte urdl = 
+            (this->upSrc->GetState() ? bit(0) : 0) |
+            (this->rightSrc->GetState() ? bit(1) : 0) |
+            (this->downSrc->GetState() ? bit(2) : 0) |
+            (this->leftSrc->GetState() ? bit(3) : 0);
+
+        signed char newState = Hat::HatFromUDLR(urdl);
+
+        switch (this->hat)
+        {
+            case 1:
+                bleGamepad->setHat1(newState);
+                break;
+            case 2:
+                bleGamepad->setHat2(newState);
+                break;
+            case 3:
+                bleGamepad->setHat3(newState);
+                break;
+            case 4:
+                bleGamepad->setHat4(newState);
+                break;
+        }
+    }
+}
+
