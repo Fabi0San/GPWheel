@@ -195,3 +195,72 @@ void Encoder::Update()
 
   this->state = constrain(this->state + this->changed, this->minValue, this->maxValue);
 }
+
+class DirectionalPulse : public LinearInput
+{
+  private:
+    GPInput* inputA;
+    GPInput* inputB;
+    int magnification;
+    int minValue;
+    int maxValue;
+    
+  public:
+    DirectionalPulse(GPInput* inputA, GPInput* inputB, int magnification, int minValue, int maxValue);
+    virtual void Update() override;
+};
+
+DirectionalPulse::DirectionalPulse(GPInput* inputA, GPInput* inputB, int magnification, int minValue, int maxValue)
+  : inputA(inputA), inputB(inputB), magnification(magnification), minValue(minValue), maxValue(maxValue)
+  {    
+  }
+
+void DirectionalPulse::Update()
+{
+    this->inputA->Update();
+    this->inputB->Update();
+    this->changed = 0;
+
+    bool aUpdated = this->inputA->HasChanged();
+    bool bUpdated = this->inputB->HasChanged();
+
+    if(aUpdated ^ bUpdated)
+    {
+        this->changed = aUpdated ? magnification : -magnification;
+        this->state = constrain(this->state + this->changed, this->minValue, this->maxValue);  
+    }
+}
+
+class DigitalPulse : public DigitalInput
+{
+  private:
+    DigitalInput* source;
+    ulong relaseTime;
+  public:
+    DigitalPulse(DigitalInput* source);
+    virtual void Update() override;      
+};
+
+  DigitalPulse::DigitalPulse(DigitalInput* source)
+    : source(source) {}
+
+void DigitalPulse::Update()
+{
+  if(this->state)
+  {
+    if(this->relaseTime > millis())
+      return;
+
+    this->state = 0;
+    this->changed = 1;
+  }
+
+  this->source->Update();
+  
+  if(this->source->HasChanged())
+  {
+    this->state = 1;
+    this->changed = 1;
+    this->relaseTime = millis() + 100;
+  }
+}
