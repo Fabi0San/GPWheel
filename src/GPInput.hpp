@@ -65,20 +65,21 @@ int LinearInput::Falling()
 class ESP32DigitalInputGroup : public DigitalInput
 { 
   private:
+    int reg;
     int mask;
     int flip;
   public:
-      ESP32DigitalInputGroup(int mask, int flip);
+      ESP32DigitalInputGroup(int reg, int mask, int flip);
       virtual void Update() override;
 };
 
-ESP32DigitalInputGroup::ESP32DigitalInputGroup(int mask, int flip) 
-  : mask(mask), flip(flip)
+ESP32DigitalInputGroup::ESP32DigitalInputGroup(int reg,int mask, int flip) 
+  : reg(reg), mask(mask), flip(flip)
 {}
 
 void ESP32DigitalInputGroup::Update()
 {
-  int newState = (REG_READ(GPIO_IN_REG) & this->mask) ^ this->flip;
+  int newState = (REG_READ(this->reg) & this->mask) ^ this->flip;
   this->changed = newState ^ this->state;
   this->state = newState;
 }
