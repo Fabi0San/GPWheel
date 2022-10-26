@@ -11,12 +11,34 @@ SimpleButton* btn = nullptr;
 Axis* axis = nullptr;
 Hat* hat = nullptr;
 GPOutput** outputs = nullptr;
+PCF8575* pcf1 = nullptr;
+PCF8575* pcf2 = nullptr;
+PCFDigitalInputGroup* pcfPins1 = nullptr;
+PCFDigitalInputGroup* pcfPins2 = nullptr;
 
 void setup() 
 {
     Serial.begin(250000);
     Serial.println("setup");
 
+    //TwoWire tw = TwoWire(0);
+    //tw.setPins(SDA, SCL);
+    //tw.begin();
+
+    //pcf1 = new PCF8575(&tw, 0x20);
+    pcf1 = new PCF8575(0x20);
+    pcf2 = new PCF8575(0x27);
+    for (uint8_t i = 0; i < 16; i++)
+    {
+        pcf1->pinMode(i, INPUT);
+        pcf2->pinMode(i, INPUT);
+    }
+
+    pcf1->begin();
+    pcf2->begin();
+
+    pcfPins1 = new PCFDigitalInputGroup(pcf1, 0xffff, 0x0);
+    pcfPins2 = new PCFDigitalInputGroup(pcf2, 0xffff, 0x0);
     
     pinMode(33, INPUT_PULLUP); // BL1
     pinMode(25, INPUT_PULLUP); // BL2
@@ -126,6 +148,9 @@ bool shouldLog = true;
 void loop() {
     ucPins->Update();
     ucPinsExt->Update();
+    pcfPins1->Update();
+    pcfPins2->Update();
+    //pcfPins1->Update();
     //updown->Update(&bleGamepad);
     //axis->Update(&bleGamepad);
     //btn->Update(&bleGamepad);
@@ -138,18 +163,24 @@ void loop() {
     }
     
 
-    if((millis() % 1000) == 0)
+    if(ucPins->HasChanged())
+        Serial.printf("u1-%f\n", log(ucPins->HasChanged())/log(2));
+    if(ucPinsExt->HasChanged())
+        Serial.printf("u2-%f\n", log(ucPinsExt->HasChanged())/log(2));
+    if(pcfPins1->HasChanged())
+        Serial.printf("s1-%f\n", log(pcfPins1->HasChanged())/log(2));
+    if(pcfPins2->HasChanged())
+        Serial.printf("s2-%f\n", log(pcfPins2->HasChanged())/log(2));
+
+/*
+    //if((millis() % 1000) == 0)
+    if(ucPins->HasChanged() || ucPinsExt->HasChanged() || pcfPins1->HasChanged() || pcfPins2->HasChanged())
     {
-        if(shouldLog)
+      //  if(shouldLog)
         {
-            
-            Serial.print(".");
-            Serial.print(ucPins->GetState());
-            Serial.print(".");
-            Serial.println(ucPinsExt->GetState());
             shouldLog = false;
         }
     }
     else
-      shouldLog = true;
+      shouldLog = true;*/
 }

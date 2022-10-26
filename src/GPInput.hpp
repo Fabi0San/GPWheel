@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include "PCF8575.h"
 
 // simple interface for input
 class GPInput
@@ -83,6 +84,32 @@ void ESP32DigitalInputGroup::Update()
   this->changed = newState ^ this->state;
   this->state = newState;
 }
+
+
+
+// reads values from i2c
+class PCFDigitalInputGroup : public DigitalInput
+{ 
+  private:
+    int mask;
+    int flip;
+    PCF8575* source;
+  public:
+      PCFDigitalInputGroup(PCF8575* source, int mask, int flip);
+      virtual void Update() override;
+};
+
+PCFDigitalInputGroup::PCFDigitalInputGroup(PCF8575* source,int mask, int flip) 
+  : source(source), mask(mask), flip(flip)
+{}
+
+void PCFDigitalInputGroup::Update()
+{
+  int newState = (this->source->digitalReadAll() & this->mask) ^ this->flip;
+  this->changed = newState ^ this->state;
+  this->state = newState;
+}
+
 
 // Debounced pin from a group
 class DigitalIGPin : public DigitalInput
