@@ -1,9 +1,13 @@
+#define PCF8575_LOW_MEMORY
+
 #include <Arduino.h>
 #include <BleGamepad.h>
 #include "GPInput.hpp"
 #include "GPOutput.hpp"
 #include "Pins.hpp"
+
 #define mPRINT_PIN_CHANGE
+
 
 ESP32DigitalInputGroup* ucPins = nullptr;
 ESP32DigitalInputGroup* ucPinsExt = nullptr;
