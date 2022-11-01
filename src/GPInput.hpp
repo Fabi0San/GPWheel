@@ -125,7 +125,7 @@ class DigitalIGPin : public DigitalInput
     virtual void Update() override;
 };
 
-DigitalIGPin::DigitalIGPin(GPInput* source, int pin, ulong debounceLimit)
+DigitalIGPin::DigitalIGPin(GPInput* source, int pin, ulong debounceLimit = 5)
   : source(source), pin(pin), debounceLimit(debounceLimit)
 {    
 }
@@ -202,9 +202,9 @@ class Encoder : public LinearInput
     virtual void Update() override;
 };
 
-Encoder::Encoder(GPInput* inputA, GPInput* inputB, int magnification, int minValue, int maxValue)
+Encoder::Encoder(GPInput* inputA, GPInput* inputB, int magnification = 1, int minValue = INT32_MIN, int maxValue = INT32_MAX)
   : inputA(inputA), inputB(inputB), magnification(magnification), minValue(minValue), maxValue(maxValue)
-  {    
+  {
   }
 
 void Encoder::Update()
@@ -259,6 +259,7 @@ void DirectionalPulse::Update()
     }
 }
 
+// Helpful with track ball pulses
 class DigitalPulse : public DigitalInput
 {
   private:
@@ -287,8 +288,8 @@ void DigitalPulse::Update()
   
   if(this->source->HasChanged())
   {
-    this->state = 1;
+    this->state = 1; //;this->state ? 0 : 1;
     this->changed = 1;
-    this->relaseTime = millis() + 100;
+    this->relaseTime = millis() + 15;
   }
 }

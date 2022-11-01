@@ -24,7 +24,7 @@ class RelativeButtonsFromLinear : public GPOutput
         void Update(BleGamepad* bleGamepad) override;
 };
 
-RelativeButtonsFromLinear::RelativeButtonsFromLinear(LinearInput* source, uint8_t buttonUp, uint8_t buttonDown, int divisor)
+RelativeButtonsFromLinear::RelativeButtonsFromLinear(LinearInput* source, uint8_t buttonUp, uint8_t buttonDown, int divisor = 4)
     : source(source), buttonUp(buttonUp), buttonDown(buttonDown), divisor(divisor), releaseAt(0), buttonHeld(0)
 {
 }
