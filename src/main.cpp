@@ -1,13 +1,10 @@
-#define PCF8575_LOW_MEMORY
-
 #include <Arduino.h>
 #include <BleGamepad.h>
 #include "GPInput.hpp"
 #include "GPOutput.hpp"
 #include "Pins.hpp"
 
-#define mPRINT_PIN_CHANGE
-
+#define PRINT_PIN_CHANGE
 
 ESP32DigitalInputGroup* ucPins = nullptr;
 ESP32DigitalInputGroup* ucPinsExt = nullptr;
@@ -26,39 +23,7 @@ void setup()
 {
     // serial setup
     Serial.begin(250000);
-    Serial.println("setup");
-
-    //PCF setup
-    pcf1 = new PCF8575(0x20);
-    pcf2 = new PCF8575(0x27);
-    for (uint8_t i = 0; i < 16; i++)
-    {
-        pcf1->pinMode(i, INPUT);
-        pcf2->pinMode(i, INPUT);
-    }
-
-    pcf1->begin();
-    pcf2->begin();
-
-    pcfPins1 = new PCFDigitalInputGroup(pcf1, 0xffff, 0x0);
-    pcfPins2 = new PCFDigitalInputGroup(pcf2, 0xffff, 0x0);
-    
-    // PINS setup
-    pinMode(32+PIN_L_B1, INPUT_PULLUP); 
-    pinMode(PIN_L_B2, INPUT_PULLUP);
-    pinMode(PIN_L_B3, INPUT_PULLUP);
-    pinMode(PIN_R_B1, INPUT_PULLUP);
-    pinMode(PIN_R_B2, INPUT_PULLUP);
-    pinMode(PIN_R_B3, INPUT_PULLUP);
-
-    pinMode(PIN_L_GEAR, INPUT); 
-    pinMode(PIN_R_GEAR, INPUT); 
-    
-    pinMode(32+PIN_TB_CLICK, INPUT);
-    pinMode(32+PIN_TB_DOWN, INPUT); 
-    pinMode(32+PIN_TB_LEFT, INPUT); 
-    pinMode(32+PIN_TB_RIGHT, INPUT);
-    pinMode(32+PIN_TB_UP, INPUT);
+    Serial.println("setup start");
 
     // Gamepad setup
     BleGamepadConfiguration bleGamepadConfig;
@@ -69,25 +34,65 @@ void setup()
     bleGamepadConfig.setIncludeStart(true);
     bleGamepadConfig.setIncludeSelect(true);
     bleGamepadConfig.setWhichAxes(true, true, true, true, true, true, true, true);      // Can also be done per-axis individually. All are true by default
-    //bleGamepadConfig.setWhichSimulationControls(true, true, true, true, true); // Can also be done per-control individually. All are false by default
     bleGamepadConfig.setHatSwitchCount(3); // 1 by default
 
     bleGamepad.begin(&bleGamepadConfig);
 
+    Serial.println("pins start");
+
+    // PINS setup
+    pinMode(32+PIN_L_B1, INPUT_PULLUP); 
+    pinMode(PIN_L_B2, INPUT_PULLUP);
+    pinMode(PIN_L_B3, INPUT_PULLUP);
+    pinMode(PIN_R_B1, INPUT_PULLUP);
+    pinMode(PIN_R_B2, INPUT_PULLUP);
+    pinMode(PIN_R_B3, INPUT_PULLUP);
+
+    pinMode(PIN_L_GEAR, INPUT); 
+    pinMode(PIN_R_GEAR, INPUT); 
+
+    pinMode(PIN_L_INT, INPUT_PULLUP); 
+    pinMode(PIN_R_INT, INPUT_PULLUP); 
     
+    pinMode(32+PIN_TB_CLICK, INPUT);
+    pinMode(32+PIN_TB_DOWN, INPUT); 
+    pinMode(32+PIN_TB_LEFT, INPUT); 
+    pinMode(32+PIN_TB_RIGHT, INPUT);
+    pinMode(32+PIN_TB_UP, INPUT);
+   
     // INPUT setup
     ucPins = new ESP32DigitalInputGroup(
         GPIO_IN_REG, 
         bit(PIN_L_B2)|bit(PIN_L_B3)|bit(PIN_R_B1)|bit(PIN_R_B2)|
-            bit(PIN_R_B3)|bit(PIN_R_GEAR)|bit(PIN_L_GEAR), // Inputs
+            bit(PIN_R_B3)|bit(PIN_R_GEAR)|bit(PIN_L_GEAR)|
+            bit(PIN_R_INT)|bit(PIN_L_INT), // Inputs
         bit(PIN_L_B2)|bit(PIN_L_B3)|bit(PIN_R_B1)|bit(PIN_R_B2)|
-            bit(PIN_R_B3)); // Flip
+            bit(PIN_R_B3)|bit(PIN_R_INT)|bit(PIN_L_INT)); // Flip
 
     ucPinsExt = new ESP32DigitalInputGroup(
         GPIO_IN1_REG, 
         bit(PIN_L_B1)|bit(PIN_TB_CLICK)|bit(PIN_TB_DOWN)|
             bit(PIN_TB_LEFT)|bit(PIN_TB_RIGHT)|bit(PIN_TB_UP), // inputs
         bit(PIN_L_B1)|bit(PIN_TB_CLICK)); // flip
+
+    Serial.println("pcf start1");
+    //PCF setup
+    pcf1 = new PCF8575(0x20);
+    pcf2 = new PCF8575(0x27);
+    for (uint8_t i = 0; i < 16; i++)
+    {
+        pcf1->pinMode(i, INPUT);
+        pcf2->pinMode(i, INPUT);
+    }
+    Serial.println("pcf start2");
+
+    pcf1->begin();
+    pcf2->begin();
+
+    Serial.println("pcf start");
+    pcfPins1 = new PCFDigitalInputGroup(pcf1, 0xffff, 0x0, new DigitalIGPin(ucPins, PIN_L_INT, 0));
+    pcfPins2 = new PCFDigitalInputGroup(pcf2, 0xffff, 0x0, new DigitalIGPin(ucPins, PIN_R_INT, 0));
+    Serial.println("pcf done");
 
     // OUTPUT SETUP
     outputs = new GPOutput*[30]{
@@ -217,6 +222,7 @@ void setup()
             new DigitalPulse(new DigitalIGPin(ucPins, 21, 5)), 
             1);*/
 
+    Serial.println("setup done");
 }
 
 int lastState = 0;
@@ -249,7 +255,10 @@ void loop() {
         Serial.printf("s1-%f\n", log(pcfPins1->HasChanged())/log(2));
     if(pcfPins2->HasChanged())
         Serial.printf("s2-%f\n", log(pcfPins2->HasChanged())/log(2));
+    /*if(ucPins->HasChanged())
+        Serial.printf("u1:%04X\n", ucPins->GetState());*/
 #endif
+
 
 /*
     //if((millis() % 1000) == 0)
