@@ -8,7 +8,7 @@
 
 ESP32DigitalInputGroup* ucPins = nullptr;
 ESP32DigitalInputGroup* ucPinsExt = nullptr;
-BleGamepad bleGamepad;
+BleGamepad bleGamepad("GPWheel", "FabioSan");
 RelativeButtonsFromLinear* updown = nullptr;
 SimpleButton* btn = nullptr;
 Axis* axis = nullptr;
@@ -27,14 +27,11 @@ void setup()
 
     // Gamepad setup
     BleGamepadConfiguration bleGamepadConfig;
-    bleGamepadConfig.setAutoReport(true);
+    bleGamepadConfig.setAutoReport(false);
     bleGamepadConfig.setControllerType(CONTROLLER_TYPE_GAMEPAD); // CONTROLLER_TYPE_JOYSTICK, CONTROLLER_TYPE_GAMEPAD (DEFAULT), CONTROLLER_TYPE_MULTI_AXIS
-    bleGamepadConfig.setButtonCount(64);
-    bleGamepadConfig.setIncludeHome(true);
-    bleGamepadConfig.setIncludeStart(true);
-    bleGamepadConfig.setIncludeSelect(true);
-    bleGamepadConfig.setWhichAxes(true, true, true, true, true, true, true, true);      // Can also be done per-axis individually. All are true by default
-    bleGamepadConfig.setHatSwitchCount(3); // 1 by default
+    bleGamepadConfig.setButtonCount(40);
+    bleGamepadConfig.setWhichAxes(true, true, false, false, false, false, false, false);      // Can also be done per-axis individually. All are true by default
+    bleGamepadConfig.setHatSwitchCount(3);
 
     bleGamepad.begin(&bleGamepadConfig);
 
@@ -53,7 +50,9 @@ void setup()
 
     pinMode(PIN_L_INT, INPUT_PULLUP); 
     pinMode(PIN_R_INT, INPUT_PULLUP); 
-    
+
+    pinMode(LED_BUILTIN, OUTPUT); 
+
     pinMode(32+PIN_TB_CLICK, INPUT);
     pinMode(32+PIN_TB_DOWN, INPUT); 
     pinMode(32+PIN_TB_LEFT, INPUT); 
@@ -228,6 +227,7 @@ void setup()
 int lastState = 0;
 int count = 0;
 bool shouldLog = true;
+uint8_t led = LOW;
 
 void loop() {
     ucPins->Update();
@@ -241,10 +241,14 @@ void loop() {
     //btn4->Update(&bleGamepad);
     //hat->Update(&bleGamepad);
 
+    int updates = 0;
     for (int i = 0; i < 30; i++)
     {
-        outputs[i]->Update(&bleGamepad);
+        updates += outputs[i]->Update(&bleGamepad);
     }
+
+    if(updates)
+        bleGamepad.sendReport();
 
 #ifdef PRINT_PIN_CHANGE
     if(ucPins->HasChanged())
@@ -258,6 +262,10 @@ void loop() {
     /*if(ucPins->HasChanged())
         Serial.printf("u1:%04X\n", ucPins->GetState());*/
 #endif
+
+    // flicker in sync with refresh
+    led = led == LOW ? HIGH : LOW;
+    digitalWrite(LED_BUILTIN, led); 
 
 
 /*

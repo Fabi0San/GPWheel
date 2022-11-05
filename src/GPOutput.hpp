@@ -6,7 +6,7 @@
 class GPOutput
 {
     public:
-    virtual void Update(BleGamepad* bleGamepad) = 0;
+    virtual int Update(BleGamepad* bleGamepad) = 0;
 };
 
 class RelativeButtonsFromLinear : public GPOutput
@@ -21,7 +21,7 @@ class RelativeButtonsFromLinear : public GPOutput
   
     public:
         RelativeButtonsFromLinear(LinearInput* source, uint8_t buttonUp, uint8_t buttonDown, int divisor);
-        void Update(BleGamepad* bleGamepad) override;
+        int Update(BleGamepad* bleGamepad) override;
 };
 
 RelativeButtonsFromLinear::RelativeButtonsFromLinear(LinearInput* source, uint8_t buttonUp, uint8_t buttonDown, int divisor = 4)
@@ -29,12 +29,14 @@ RelativeButtonsFromLinear::RelativeButtonsFromLinear(LinearInput* source, uint8_
 {
 }
 
-void RelativeButtonsFromLinear::Update(BleGamepad* bleGamepad)
+int RelativeButtonsFromLinear::Update(BleGamepad* bleGamepad)
 {
+    int result = 0;
     if(this->releaseAt !=0 && millis() >= this->releaseAt)
     {
         bleGamepad->release(this->buttonHeld);
         this->releaseAt = 0;
+        result++;
     }
 
     this->source->Update();
@@ -49,8 +51,10 @@ void RelativeButtonsFromLinear::Update(BleGamepad* bleGamepad)
             bleGamepad->press(button);
             this->buttonHeld = button;
             this->releaseAt = millis() + 100;
-            Serial.println(this->source->GetState());
+            result++;
         }
+    
+    return result;
 }
 
 class SimpleButton : public GPOutput
@@ -60,7 +64,7 @@ class SimpleButton : public GPOutput
         DigitalInput* source;
     public:
         SimpleButton(DigitalInput* source, uint8_t button);
-        void Update(BleGamepad* bleGamepad) override;
+        int Update(BleGamepad* bleGamepad) override;
 };
 
 SimpleButton::SimpleButton(DigitalInput* source, uint8_t button)
@@ -68,17 +72,19 @@ SimpleButton::SimpleButton(DigitalInput* source, uint8_t button)
 {    
 }
 
-void SimpleButton::Update(BleGamepad* bleGamepad)
+int SimpleButton::Update(BleGamepad* bleGamepad)
 {
     this->source->Update();
     if(source->Raising())
     {
         bleGamepad->press(this->button);
+        return 1;
     }
 
     if(source->Falling())
     {
         bleGamepad->release(this->button);
+        return 1;
     }
 }
 
@@ -89,7 +95,7 @@ class Axis : public GPOutput
         LinearInput* source;
     public:
         Axis(LinearInput* source, uint8_t axis);
-        void Update(BleGamepad* bleGamepad) override;
+        int Update(BleGamepad* bleGamepad) override;
 };
 
 Axis::Axis(LinearInput* source, uint8_t axis)
@@ -97,7 +103,7 @@ Axis::Axis(LinearInput* source, uint8_t axis)
 {    
 }
 
-void Axis::Update(BleGamepad* bleGamepad)
+int Axis::Update(BleGamepad* bleGamepad)
 {
     this->source->Update();
 
@@ -132,7 +138,9 @@ void Axis::Update(BleGamepad* bleGamepad)
             bleGamepad->setSlider2(value);
             break;       
         }
+        return 1;
     }
+    return 0;
 }
 
 class Hat: public GPOutput
@@ -148,7 +156,7 @@ class Hat: public GPOutput
 
     public:
         Hat(DigitalInput* upSrc, DigitalInput* downSrc, DigitalInput* leftSrc, DigitalInput* rightSrc, uint8_t hat);
-        void Update(BleGamepad* bleGamepad) override;
+        int Update(BleGamepad* bleGamepad) override;
 };
 
 Hat::Hat(DigitalInput* upSrc, DigitalInput* downSrc, DigitalInput* leftSrc, DigitalInput* rightSrc, uint8_t hat)
@@ -170,7 +178,7 @@ signed char Hat::HatFromUDLR(byte urdl)
     }
 }
 
-void Hat::Update(BleGamepad* bleGamepad)
+int Hat::Update(BleGamepad* bleGamepad)
 {
     this->upSrc->Update();
     this->rightSrc->Update();
@@ -205,6 +213,7 @@ void Hat::Update(BleGamepad* bleGamepad)
                 bleGamepad->setHat4(newState);
                 break;
         }
+        return 1;
     }
+    return 0;
 }
-
