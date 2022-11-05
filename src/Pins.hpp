@@ -6,6 +6,8 @@
 #define PIN_L_B3            26
 #define PIN_R_GEAR          5
 #define PIN_L_GEAR          23
+#define PIN_R_INT           16
+#define PIN_L_INT           17
 
 // on extended uc +32
 #define PIN_L_B1            1

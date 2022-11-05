@@ -94,20 +94,36 @@ class PCFDigitalInputGroup : public DigitalInput
     int mask;
     int flip;
     PCF8575* source;
+    DigitalInput* hasData;
+    void InternalUpdate();
   public:
-      PCFDigitalInputGroup(PCF8575* source, int mask, int flip);
+      PCFDigitalInputGroup(PCF8575* source, int mask, int flip, DigitalInput* hasData);
       virtual void Update() override;
 };
 
-PCFDigitalInputGroup::PCFDigitalInputGroup(PCF8575* source,int mask, int flip) 
-  : source(source), mask(mask), flip(flip)
+PCFDigitalInputGroup::PCFDigitalInputGroup(PCF8575* source,int mask, int flip, DigitalInput* hasData = 0) 
+  : source(source), mask(mask), flip(flip), hasData(hasData)
 {}
 
 void PCFDigitalInputGroup::Update()
 {
-  int newState = (this->source->digitalReadAll() & this->mask) ^ this->flip;
-  this->changed = newState ^ this->state;
-  this->state = newState;
+  if(this->hasData) // int pin present
+  {
+    this->hasData->Update();
+    if(this->hasData->GetState())
+      this->InternalUpdate();
+    else
+      this->changed = 0;
+  }
+  else // NO int pin configured, update every time
+    this->InternalUpdate();
+}
+
+void PCFDigitalInputGroup::InternalUpdate()
+{
+    int newState = (this->source->digitalReadAll() & this->mask) ^ this->flip;
+    this->changed = newState ^ this->state;
+    this->state = newState;
 }
 
 
