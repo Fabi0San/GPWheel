@@ -86,6 +86,7 @@ int SimpleButton::Update(BleGamepad* bleGamepad)
         bleGamepad->release(this->button);
         return 1;
     }
+    return 0;
 }
 
 class Axis : public GPOutput

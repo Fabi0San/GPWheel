@@ -4,7 +4,7 @@
 #include "GPOutput.hpp"
 #include "Pins.hpp"
 
-#define PRINT_PIN_CHANGE
+//#define PRINT_PIN_CHANGE
 
 ESP32DigitalInputGroup* ucPins = nullptr;
 ESP32DigitalInputGroup* ucPinsExt = nullptr;
@@ -38,6 +38,8 @@ void setup()
     Serial.println("pins start");
 
     // PINS setup
+    pinMode(GPIO_NUM_0, INPUT);
+
     pinMode(32+PIN_L_B1, INPUT_PULLUP); 
     pinMode(PIN_L_B2, INPUT_PULLUP);
     pinMode(PIN_L_B3, INPUT_PULLUP);
@@ -62,7 +64,7 @@ void setup()
     // INPUT setup
     ucPins = new ESP32DigitalInputGroup(
         GPIO_IN_REG, 
-        bit(PIN_L_B2)|bit(PIN_L_B3)|bit(PIN_R_B1)|bit(PIN_R_B2)|
+        bit(0) | bit(PIN_L_B2)|bit(PIN_L_B3)|bit(PIN_R_B1)|bit(PIN_R_B2)|
             bit(PIN_R_B3)|bit(PIN_R_GEAR)|bit(PIN_L_GEAR)|
             bit(PIN_R_INT)|bit(PIN_L_INT), // Inputs
         bit(PIN_L_B2)|bit(PIN_L_B3)|bit(PIN_R_B1)|bit(PIN_R_B2)|
@@ -189,13 +191,6 @@ void setup()
 
     };
 
-    /*updown = new RelativeButtonsFromLinear(
-        new Encoder(
-            new DigitalIGPin(ucPins, 18, 5), 
-            new DigitalIGPin(ucPins, 19, 5),
-            1, -12, 12)
-        , 2, 3, 4); */
-
 /*    axis = new Axis(
         new DirectionalPulse(
             new DigitalIGPin(ucPins, 18, 5), 
@@ -207,19 +202,6 @@ void setup()
         new ADCPin(13)
         , X_AXIS);  */
 
-/*    hat = new Hat(
-            new DigitalIGPin(ucPins, 13, 5), 
-            new DigitalIGPin(ucPins, 14, 5), 
-            new DigitalIGPin(ucPins, 27, 5), 
-            new DigitalIGPin(ucPins, 26, 5),
-            1);*/
-
-    /*hat = new Hat(
-            new DigitalPulse(new DigitalIGPin(ucPins, 19, 5)), 
-            new DigitalPulse(new DigitalIGPin(ucPins, 22, 5)), 
-            new DigitalPulse(new DigitalIGPin(ucPins, 18, 5)), 
-            new DigitalPulse(new DigitalIGPin(ucPins, 21, 5)), 
-            1);*/
 
     Serial.println("setup done");
 }
@@ -234,12 +216,6 @@ void loop() {
     ucPinsExt->Update();
     pcfPins1->Update();
     pcfPins2->Update();
-    //pcfPins1->Update();
-    //updown->Update(&bleGamepad);
-    //axis->Update(&bleGamepad);
-    //btn->Update(&bleGamepad);
-    //btn4->Update(&bleGamepad);
-    //hat->Update(&bleGamepad);
 
     int updates = 0;
     for (int i = 0; i < 30; i++)
@@ -263,20 +239,10 @@ void loop() {
         Serial.printf("u1:%04X\n", ucPins->GetState());*/
 #endif
 
-    // flicker in sync with refresh
-    led = led == LOW ? HIGH : LOW;
-    digitalWrite(LED_BUILTIN, led); 
-
-
-/*
-    //if((millis() % 1000) == 0)
-    if(ucPins->HasChanged() || ucPinsExt->HasChanged() || pcfPins1->HasChanged() || pcfPins2->HasChanged())
+    // connected means led on, button flips led to show we are alive.
+    if(bleGamepad.isConnected() ^ ((ucPins->GetState() & bit(GPIO_NUM_0)) == 0) != (led == HIGH) )
     {
-      //  if(shouldLog)
-        {
-            shouldLog = false;
-        }
+        led = led == LOW ? HIGH : LOW;
+        digitalWrite(LED_BUILTIN, led); 
     }
-    else
-      shouldLog = true;*/
 }
